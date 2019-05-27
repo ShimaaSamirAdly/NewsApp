@@ -22,14 +22,12 @@ class NewsListTableViewController: UITableViewController {
         tableView.estimatedRowHeight = 44
         tableView.rowHeight = UITableView.automaticDimension
         
-        UIView.setAnimationsEnabled(false)
 
         let refreshControl = UIRefreshControl()
         refreshControl.addTarget(self, action:  #selector(refreshList), for: .valueChanged)
         refreshControl.tintColor = UIColor.clear
         self.refreshControl = refreshControl
         
-//        loadNewsList(isRefreshList: false)
         viewModel.getArticles()
 
     }
@@ -37,10 +35,7 @@ class NewsListTableViewController: UITableViewController {
     
     @objc func refreshList() {
         self.fetchMoreData = false
-        print("in heree in hereee")
         self.viewModel.page = 1
-        
-//        loadNewsList(isRefreshList: true)
         viewModel.getArticles()
 
     }
@@ -64,7 +59,7 @@ extension NewsListTableViewController {
         
         if let cell = tableView.dequeueReusableCell(withIdentifier: "articleCell") as? NewsTableViewCell {
             cell.articleImg.sd_imageIndicator = SDWebImageActivityIndicator.gray
-            cell.articleImg.sd_setImage(with: URL(string: viewModel.getImageUrl(index: indexPath.row)), placeholderImage: nil)
+            cell.articleImg.sd_setImage(with: URL(string: viewModel.getImageUrl(index: indexPath.row)), placeholderImage: #imageLiteral(resourceName: "placeholder"))
             cell.articleTitle.text = viewModel.getArticleTitle(index: indexPath.row)
             cell.articleDescription.text = viewModel.getArticleDescription(index: indexPath.row)
             cell.authorName.text = "By: \(viewModel.getAuthorName(index: indexPath.row))"
@@ -81,6 +76,7 @@ extension NewsListTableViewController {
         let storyBoard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
         let articleDescViewController = storyBoard.instantiateViewController(withIdentifier: "articleDesc") as! ArticleDescriptionViewController
         articleDescViewController.modalPresentationStyle = .overCurrentContext
+        articleDescViewController.modalTransitionStyle = .crossDissolve
         let articleDescViewModel = ArticleDescriptionViewModel(articleDescription: self.viewModel.getArticleDescription(index: indexPath.row))
         articleDescViewController.viewModel = articleDescViewModel
         self.present(articleDescViewController, animated: true, completion: nil)
@@ -91,33 +87,17 @@ extension NewsListTableViewController {
         
         let offestY = scrollView.contentOffset.y
         let contentHeight = scrollView.contentSize.height
-        if offestY > contentHeight - scrollView.frame.height && viewModel.hasMoreData() {
+        if (offestY > contentHeight - scrollView.frame.height) && viewModel.hasMoreData() {
             
             if fetchMoreData {
-                print("in hereee scroll")
                 fetchMoreData = false
                 viewModel.page += 1
-//                loadNewsList(isRefreshList: false)
                 viewModel.getArticles()
 
             }
         }
     }
     
-    
-//    func loadNewsList(isRefreshList: Bool) {
-//        viewModel.getArticles {
-//            if isRefreshList {
-//                self.refreshControl?.endRefreshing()
-//            }
-//
-//            self.tableView.reloadData(){
-//                self.fetchMoreData = true
-//            }
-//
-//        }
-    
-//    }
     
     
 }
@@ -134,9 +114,14 @@ extension NewsListTableViewController: MainProtocol {
     
     func succefullyFetchData() {
         self.refreshControl?.endRefreshing()
-        self.tableView.reloadData(){
-            self.fetchMoreData = true
-        }
+        UIView.performWithoutAnimation {
+            self.tableView.reloadData(){
+                if self.viewModel.isConnected {
+                    self.fetchMoreData = true
+                }
+            }
+       }
+        
     }
     
     

@@ -16,6 +16,7 @@ class NewsViewModel {
     var page = 1
     var totalResults = 0
     var isAvailableCountryCode: Bool = true
+    var isConnected = true
     
     func getNoOfCells() -> Int {
         return articles.count
@@ -46,18 +47,23 @@ class NewsViewModel {
     //check for internet connection before calling api
     func getArticles() {
         if NWConnectivity.sharedInstance.isConnectedToInternet(){
+            self.isConnected = true
             callGetNewsAPI {
                 self.delegate?.succefullyFetchData()
             }
         }else {
             NWConnectivity.sharedInstance.startListening {
-                self.page = 1
+                
+                self.isConnected = true
                 self.callGetNewsAPI {
                     self.delegate?.succefullyFetchData()
                 }
             }
             ToastAlertView.showToastMessage(text: "No Internet Connection!")
-            self.articles = ArticleCachingManager.shared.getAllArticles()
+            if articles.count == 0 {
+                self.articles = ArticleCachingManager.shared.getAllArticles()
+            }
+            self.isConnected = false
             self.delegate?.succefullyFetchData()
         }
     }
@@ -67,7 +73,7 @@ class NewsViewModel {
     func setCountryCode() {
         if let countryCode = (Locale.current as NSLocale).object(forKey: .countryCode) as? String, isAvailableCountryCode {
             self.countryCode = countryCode.lowercased()
-            //            self.countryCode = "mm"
+//                        self.countryCode = "mm"
         }else {
             self.countryCode = "us"
         }
@@ -75,6 +81,8 @@ class NewsViewModel {
     
     //start calling api to get data
     private func callGetNewsAPI(completion: @escaping ()->()) {
+        
+        setCountryCode()
         
         self.delegate?.startLoading()
 
@@ -88,7 +96,11 @@ class NewsViewModel {
                 }else {
                     if self.page == 1 {
                         self.articles = articles
-                        ArticleCachingManager.shared.addArticles(articles: Array(self.articles.prefix(5)))
+                        if articles.count > 5 {
+                            ArticleCachingManager.shared.addArticles(articles: Array(self.articles.prefix(5)))
+                        }else {
+                            ArticleCachingManager.shared.addArticles(articles: self.articles)
+                        }
                     }else {
                         self.articles.append(contentsOf: articles)
                     }

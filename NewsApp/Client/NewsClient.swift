@@ -21,14 +21,14 @@ class NewsClient {
     
     //calling api to get list of news
     func getPopularNews(country: String, page: Int, completion: @escaping ([ArticleModel], Int, String?) -> Void) {
-
+       
         let url = URL(string: "https://newsapi.org/v2/top-headlines?country=\(country)&apiKey=\(apiKey)&page=\(page)&pageSize=10")
         
         Alamofire.request(url!).responseJSON { (response) in
             print("response is \(response)")
             guard response.result.isSuccess else {
                 print("in errorrr")
-                completion([], 0, "Error is \(String(describing: response.error))")
+                completion([], 0, "Error is \(response.error?.localizedDescription))")
                 return
             }
             
@@ -49,6 +49,7 @@ class NewsClient {
                     completion([], 0, errorResponse.message)
                 }
             } catch {
+                
                 completion([], 0, "\(error)")
                 print(error)
             }
